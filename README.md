@@ -4,7 +4,7 @@ Small CLI to increment semantic versions.
 
 ## Installation
 
-Get and install Go 1.18 or above from <https://go.dev> and run the command below after which
+Get and install Go 1.16 or above from <https://go.dev> and run the command below after which
 the `semvereis` binary could be found under `$HOME/go/bin`.
 
 ```sh
