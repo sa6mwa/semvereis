@@ -1,3 +1,7 @@
+// semvereis
+//
+// A small CLI tool to increment semantic versions. Mainly intended to be used
+// in Makefiles and CI/CD tooling.
 package main
 
 import (
@@ -39,6 +43,9 @@ var (
 	addLatestGitCommitHashAsPreRelease bool
 	prerelease                         string
 	fallbackSemver                     string
+	noNewLine                          bool
+	outputFile                         string
+	silent                             bool
 )
 
 var (
@@ -153,10 +160,34 @@ func nextVersionFunc(cmd *cobra.Command, args []string) error {
 			return err
 		}
 	}
-	if preserveV {
-		fmt.Println(sv.Original())
-	} else {
-		fmt.Println(sv.String())
+	if !silent {
+		if preserveV {
+			if noNewLine {
+				fmt.Print(sv.Original())
+			} else {
+				fmt.Println(sv.Original())
+			}
+		} else {
+			if noNewLine {
+				fmt.Print(sv.String())
+			} else {
+				fmt.Println(sv.String())
+			}
+		}
+	}
+	if cmd.Flags().Changed("output") {
+		if outputFile != "" {
+			f, err := os.Create(outputFile)
+			if err != nil {
+				return err
+			}
+			defer f.Close()
+			if preserveV {
+				f.Write([]byte(sv.Original()))
+			} else {
+				f.Write([]byte(sv.String()))
+			}
+		}
 	}
 	return nil
 }
@@ -269,13 +300,16 @@ func which(prog string) string {
 }
 
 func init() {
-	rootCmd.PersistentFlags().StringVarP(&fromFile, "file", "f", "", "read semantic version from `file`name, use - to read from stdin")
-	rootCmd.PersistentFlags().BoolVarP(&preserveV, "preserve-v", "v", false, "if semver is prefixes with a \"v\", preserve it in the output")
+	rootCmd.PersistentFlags().StringVarP(&fromFile, "file", "f", "", blox.WrapString("read semantic version from `file`name, use - to read from stdin", 50))
+	rootCmd.PersistentFlags().BoolVarP(&preserveV, "preserve-v", "v", false, blox.WrapString("if semver is prefixes with a \"v\", preserve it in the output", 50))
 	rootCmd.PersistentFlags().BoolVarP(&addV, "add-v", "V", false, "if semver is not prefixed with a \"v\", add it")
 	rootCmd.PersistentFlags().BoolVarP(&longTags, "long-git-tags", "l", false, "when using git tags as semver, use long tags")
 	rootCmd.PersistentFlags().BoolVarP(&addLatestGitCommitHashAsPreRelease, "add-git-hash", "g", false, "add latest git hash as prerelease to semver")
 	rootCmd.PersistentFlags().StringVarP(&prerelease, "prerelease", "p", "", "add `string` as prerelease to semver")
 	rootCmd.PersistentFlags().StringVarP(&fallbackSemver, "default", "d", "", "default or fallback semver if git attempt fails")
+	rootCmd.PersistentFlags().BoolVarP(&noNewLine, "no-newline", "n", false, "suppress trailing newline in ouput")
+	rootCmd.PersistentFlags().StringVarP(&outputFile, "output", "o", "", blox.WrapString("in addition to printing semver, write it to output `file` (will be created if not exists or overwritten if exists)", 50))
+	rootCmd.PersistentFlags().BoolVarP(&silent, "silent", "s", false, blox.WrapString("do not print semver regardless if -o was given or not", 50))
 
 	rootCmd.AddCommand(nextCmd)
 	nextCmd.AddCommand(nextMajorCmd)
