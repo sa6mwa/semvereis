@@ -1,9 +1,13 @@
 BIN=semvereis
 TARGET=/usr/local/bin
-NEXTVER = $(shell ./$(BIN) next minor -d v0.0.0)
-NEXTTAG = $(shell ./$(BIN) next minor -d v0.0.0 -v)
+NEXTMINOR = $(shell go run semvereis.go next minor -d v0.0.0)
+NEXTMINORTAG = $(shell go run semvereis.go next minor -d v0.0.0 -v)
+NEXTPATCH = $(shell go run semvereis.go next patch -d v0.0.0)
+NEXTPATCHTAG = $(shell go run semvereis.go next patch -d v0.0.0 -v)
+tar = tar --owner=0 --group=0 -czf $(BIN)-$(1).tar.gz $(BIN) --transform 's|^|$(BIN)-$(1)/|' go.mod go.sum semvereis.go LICENSE Makefile README.md VERSION
+tagmsg = @echo "Commit, tag and push: git commit -a ; git tag $(1) ; git push origin $(1)"
 
-.PHONY: all build install clean release
+.PHONY: all build install clean release patch minor
 
 all: build
 
@@ -16,9 +20,18 @@ install:
 	install $(BIN) $(TARGET)/
 
 clean:
-	rm -f $(BIN) semvereis-*.tar.gz
+	rm -f $(BIN) $(wildcard $(BIN)-*.tar.gz)
 
-release: $(BIN)
-	$(shell echo -n $(NEXTVER) > VERSION)
-	tar --owner=0 --group=0 -czf semvereis-$(NEXTVER).tar.gz $(BIN) --transform 's|^|$(BIN)-$(NEXTVER)/|' go.mod go.sum semvereis.go LICENSE Makefile README.md VERSION
-	@echo Tag commit with: git tag $(NEXTTAG)
+release: releaseMinor
+
+releaseMinor: clean
+	$(shell echo -n $(NEXTMINOR) > VERSION)
+	$(MAKE) build
+	$(call tar,$(NEXTMINOR))
+	$(call tagmsg,$(NEXTMINORTAG))
+
+releasePatch: clean
+	$(shell echo -n $(NEXTPATCH) > VERSION)
+	$(MAKE) build
+	$(call tar,$(NEXTPATCH))
+	$(call tagmsg,$(NEXTPATCHTAG))

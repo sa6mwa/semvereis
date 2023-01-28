@@ -167,7 +167,11 @@ func getSemVer(semverInput io.Reader, useLongTag bool, gitFallbackSemver string)
 		// attempt to get semver string from git
 		fi, err := os.Stat(gitDir)
 		if err != nil && errors.Is(err, os.ErrNotExist) {
-			return "", nil
+			fb := strings.TrimSpace(gitFallbackSemver)
+			if fb != "" {
+				return fb, nil
+			}
+			return "", fmt.Errorf("no %s directory found and no default semver specified", gitDir)
 		} else if err != nil {
 			return "", err
 		}
@@ -181,9 +185,9 @@ func getSemVer(semverInput io.Reader, useLongTag bool, gitFallbackSemver string)
 		}
 		var cmd *exec.Cmd
 		if useLongTag {
-			cmd = exec.Command(gitPath, gitRetrieveLatestTag...)
-		} else {
 			cmd = exec.Command(gitPath, gitRetrieveFullTag...)
+		} else {
+			cmd = exec.Command(gitPath, gitRetrieveLatestTag...)
 		}
 		var cmdOut bytes.Buffer
 		var cmdErr bytes.Buffer
