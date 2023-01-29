@@ -23,8 +23,8 @@ install:
 clean:
 	rm -f $(BIN) $(wildcard $(BIN)-*.tar.gz)
 
-VERSION:
-	git describe --tags --abbrev=0 | sed 's/^v//' > VERSION
+$(VF):
+	git describe --tags --abbrev=0 | sed 's/^v//' > $(VF)
 
 release: releaseMinor
 
